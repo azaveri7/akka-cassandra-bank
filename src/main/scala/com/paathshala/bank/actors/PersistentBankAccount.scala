@@ -1,4 +1,4 @@
-package com.paathshala.actors
+package com.paathshala.bank.actors
 
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.persistence.typed.PersistenceId
@@ -7,23 +7,27 @@ import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior}
 // a single bank account
 
 // we are going to follow event sourcing model.
-class PersistentBankAccount {
+object PersistentBankAccount {
 
   /*
   - fault tolerance
   - auditing
    */
-
+   */
   // commands - messages
   sealed trait Command
 
-  case class CreateBankAccount(user: String, currency: String,
-                              initialBalance: Double,
-                              replyTo: ActorRef[Response]) extends Command
-  case class UpdateBalance(id: String, currency: String, amount: Double,
-                           replyTo: ActorRef[Response]) extends Command
-  case class GetBankAccount(id: String, replyTo: ActorRef[Response])
-                           extends Command
+  import Command._
+
+  object Command {
+    case class CreateBankAccount(user: String, currency: String,
+                                 initialBalance: Double,
+                                 replyTo: ActorRef[Response]) extends Command
+    case class UpdateBalance(id: String, currency: String, amount: Double,
+                             replyTo: ActorRef[Response]) extends Command
+    case class GetBankAccount(id: String, replyTo: ActorRef[Response])
+      extends Command
+  }
 
   // events - to persist to Cassandra
   trait Event
@@ -35,11 +39,17 @@ class PersistentBankAccount {
                          , balance: Double)
   // responses
   sealed trait Response
-  case class BankAccountCreatedResponse(id: String) extends Response
-  case class BankAccountBalanceUpdatedResponse(maybeAccount: Option[BankAccount])
-                         extends Response
-  case class GetBankAccountResponse(maybeAccount: Option[BankAccount])
-                         extends Response
+  object Response {
+    case class BankAccountCreatedResponse(id: String) extends Response
+    case class BankAccountBalanceUpdatedResponse(maybeAccount: Option[BankAccount])
+      extends Response
+    case class GetBankAccountResponse(maybeAccount: Option[BankAccount])
+      extends Response
+  }
+
+  import Command._
+  import Response._
+
 
   // command handler - message handler => persist an event
   // event handler => update state
